@@ -1,0 +1,177 @@
+from m5stack import *
+from m5ui import *
+from uiflow import *
+import wifiCfg
+from flow import ezdata
+import json
+
+import imu
+import time
+import unit
+remoteInit()
+
+setScreenColor(0x222222)
+angle_1 = unit.get(unit.ANGLE, unit.PORTB)
+pir_1 = unit.get(unit.PIR, unit.PORTC)
+rgb_1 = unit.get(unit.RGB, unit.PORTC)
+env3_1 = unit.get(unit.ENV3, unit.PORTA)
+
+
+intial_movement = None
+intial_angle = None
+x1 = None
+y1 = None
+wifi_status = None
+detected_angle = None
+detected_moment = None
+x2 = None
+y2 = None
+data = None
+
+wifiCfg.autoConnect(lcdShow=False)
+imu0 = imu.IMU()
+
+Homescreen = M5Title(title="SMART ASSET", x=3, fgcolor=0xFFFFFF, bgcolor=0x0000FF)
+label7 = M5TextBox(7, 42, "label7", lcd.FONT_Default, 0xFFFFFF, rotate=0)
+label8 = M5TextBox(13, 71, "label8", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label9 = M5TextBox(180, 71, "label9", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label10 = M5TextBox(13, 100, "label10", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label11 = M5TextBox(180, 100, "label11", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label0 = M5TextBox(187, 57, "label0", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label12 = M5TextBox(12, 146, "label12", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label1 = M5TextBox(187, 85, "label1", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label13 = M5TextBox(174, 146, "label13", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label2 = M5TextBox(187, 123, "label2", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label14 = M5TextBox(102, 33, "label14", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label3 = M5TextBox(12, 56, "label3", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label4 = M5TextBox(13, 85, "label4", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label5 = M5TextBox(11, 123, "label5", lcd.FONT_DejaVu18, 0xFFFFFF, rotate=0)
+label15 = M5TextBox(48, 42, "label15", lcd.FONT_Default, 0xFFFFFF, rotate=0)
+image0 = M5Img(0, 20, "res/iotimg.jpg", True)
+label6 = M5TextBox(7, 27, "label6", lcd.FONT_Default, 0x000000, rotate=0)
+
+
+
+def buttonB_wasPressed():
+  global intial_movement, intial_angle, x1, y1, wifi_status, detected_angle, detected_moment, x2, y2, data
+  lcd.fill(0x000000)
+  lcd.qrcode('https://flow.m5stack.com/remote?id=1006630456587976704', 72, 32, 176)
+  Homescreen.setTitle('SMART ASSET')
+  Homescreen.setBgColor(0x3333ff)
+  pass
+btnB.wasPressed(buttonB_wasPressed)
+
+def buttonA_wasPressed():
+  global intial_movement, intial_angle, x1, y1, wifi_status, detected_angle, detected_moment, x2, y2, data
+  label0.hide()
+  label1.hide()
+  label2.hide()
+  label3.hide()
+  label4.hide()
+  label5.hide()
+  label6.hide()
+  label7.hide()
+  label15.hide()
+  image0.hide()
+  label14.setText('Utilities')
+  label8.setText('WiFi:')
+  wifi_status = wifiCfg.wlan_sta.isconnected()
+  if wifiCfg.wlan_sta.isconnected():
+    label9.setText('Connected')
+  else:
+    label9.setText('Not Connected')
+  ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'WiFi', (json.dumps((wifiCfg.wlan_sta.isconnected()))))
+  label10.setText('Power:')
+  label11.setText(str(power.getBatteryLevel()))
+  ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'Battery', (json.dumps((power.getBatteryLevel()))))
+  label12.setText('Temperature:')
+  label13.setText(str(env3_1.temperature))
+  ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'Temperature', (json.dumps((env3_1.temperature))))
+  pass
+btnA.wasPressed(buttonA_wasPressed)
+
+def buttonC_wasPressed():
+  global intial_movement, intial_angle, x1, y1, wifi_status, detected_angle, detected_moment, x2, y2, data
+  lcd.fill(0x000000)
+  setScreenColor(0xff9900)
+  Homescreen.setBgColor(0x3333ff)
+  intial_movement = 0
+  intial_angle = 900
+  x1 = 10
+  y1 = 10
+  label8.hide()
+  label9.hide()
+  label10.hide()
+  label11.hide()
+  label12.hide()
+  label13.hide()
+  label14.hide()
+  label3.setText('Asset Lid:')
+  label4.setText('Human Presence:')
+  label5.setText('Tamper:')
+  while True:
+    label6.hide()
+    label7.hide()
+    detected_angle = angle_1.read()
+    ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'Angle', (json.dumps(detected_angle)))
+    if detected_angle >= intial_angle:
+      label0.setColor(0xff0000)
+      label3.setColor(0x000000)
+      label0.setText('Opened')
+      rgb.setColorFrom(6, 10, 0xff0000)
+      rgb.setColorFrom(1, 5, 0xff0000)
+    else:
+      label0.setColor(0x33cc00)
+      label3.setColor(0x000000)
+      label0.setText('Closed')
+      rgb.setColorFrom(6, 10, 0x33ff33)
+      rgb.setColorFrom(1, 5, 0x33ff33)
+    detected_moment = pir_1.state
+    ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'PIR', (json.dumps(detected_moment)))
+    if intial_movement != detected_moment:
+      label1.setColor(0xff0000)
+      label4.setColor(0x000000)
+      label1.setText('Detected')
+      rgb_1.setColorAll(0xff0000)
+    else:
+      label1.setColor(0x33cc00)
+      label4.setColor(0x000000)
+      label1.setText('Not Detected')
+      rgb_1.setColorAll(0x33cc00)
+    x2 = imu0.ypr[1]
+    y2 = imu0.ypr[2]
+    if x1 >= x2 and y1 >= y2:
+      label5.setColor(0x000000)
+      label2.setColor(0xff0000)
+      label2.setText('Detected')
+      speaker.tone(1800, 200)
+    else:
+      label2.show()
+      label5.setColor(0x000000)
+      label2.setColor(0x33cc00)
+      label2.setText('Not detected')
+      data = {'Detected Angle':detected_angle,'Detected Motion':detected_moment,'x':x2,'y':y2}
+      ezdata.setData('8IpJAhw8ZdIXClVXExXNopEU72PJXP15', 'jsondata', (json.dumps(data)))
+      wait(50000)
+      with open('/sd/sensordata.txt', 'w+') as fs:
+        fs.write(str(data))
+    wait_ms(2)
+  pass
+btnC.wasPressed(buttonC_wasPressed)
+
+
+
+
+
+def button_Click_callback():
+  global intial_movement, intial_angle, x1, y1, wifi_status, detected_angle, detected_moment, x2, y2, data, angle_1, pir_1, rgb_1, env3_1 
+  lcd.fill(0x000000)
+  setScreenColor(0xff9900)
+  Homescreen.setBgColor(0x3333ff)
+  Homescreen.setTitle('SMART ASSET')
+  label5.setText('Welcome to the Smart Asset system! This innovative solution is designed to monitor and secure your precious and valuable items, such as jewelry, money, and other personal valuables. The system provides real-time security alerts in case of unauthorized human presence or if the asset storage box is opened.Button A Display Utilities screen.Button B Show QR code for mobile interface.Button C Output display page')
+
+
+
+Homescreen.setTitle('SMART ASSET')
+Homescreen.setBgColor(0x3333ff)
